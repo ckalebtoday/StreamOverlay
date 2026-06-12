@@ -40,7 +40,12 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 <body>
 <div class="app">
   <h2>C.Kaleb Win Streak Tracker</h2>
-  <div class="tip"><b>OBS:</b> Add Browser Source → Local File → select <b>tracker-overlay.html</b>. Width 340, Height 110. Both files same folder.<br><b>Keys:</b> W = Win, L = Lose, Ctrl+Z = Undo</div>
+  <div class="tip">
+    <b>OBS Overlay:</b> Add Browser Source → URL →
+    <b>https://ckalebtoday.github.io/StreamOverlay/</b> — Width 340, Height 110.<br>
+    <b>Tracker:</b> Open <b>https://ckalebtoday.github.io/StreamOverlay/tracker.html</b> in a browser tab while streaming.<br>
+    <b>Keys:</b> W = Win &nbsp;|&nbsp; L = Lose &nbsp;|&nbsp; Ctrl+Z = Undo
+  </div>
   <div class="card">
     <div class="lbl">Current Win Streak</div>
     <div id="numDisplay">0</div>
@@ -72,41 +77,66 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 </div>
 <script>
 (function(){
-var streak=0,best=0,wins=0,losses=0,hist=[];
-function save(){try{localStorage.setItem('ckaleb_streak',JSON.stringify({streak:streak,best:best,wins:wins,losses:losses}));}catch(e){}}
-function update(){
-  document.getElementById('numDisplay').textContent=streak;
-  document.getElementById('bestDisplay').textContent=best;
-  document.getElementById('winsDisplay').textContent=wins;
-  document.getElementById('lossDisplay').textContent=losses;
-  var t=wins+losses;
-  document.getElementById('rateDisplay').textContent=t>0?Math.round(wins/t*100)+'%':'--';
-  document.getElementById('numDisplay').style.color=streak>0?'#4ade80':'#8a90a8';
-  var wr=t>0?Math.round(wins/t*100)+'%':'N/A';
-  var cmds=[['!streak','C.Kaleb is on a '+streak+'-game win streak!'],['!best','Best streak tonight: '+best+' wins in a row'],['!score',wins+'W / '+losses+'L -- Win rate '+wr],['!arena','Post arena code in chat to join!'],['!char','C.Kaleb mains Pac-Man | MI Top 10 Smash Ultimate']];
-  document.getElementById('cmdList').innerHTML=cmds.map(function(c){return '<div class="cmd"><span class="cmd-t">'+c[0]+'</span><span class="cmd-r">"'+c[1]+'"</span></div>';}).join('');
-  save();
-}
-function doWin(){hist.push('w');streak++;wins++;if(streak>best)best=streak;update();}
-function doLose(){hist.push('l');streak=0;losses++;update();}
-function doUndo(){
-  if(!hist.length)return;
-  var l=hist.pop();
-  if(l==='w'){wins=Math.max(0,wins-1);streak=Math.max(0,streak-1);}
-  else{losses=Math.max(0,losses-1);streak=0;for(var i=hist.length-1;i>=0;i--){if(hist[i]==='w')streak++;else break;}}
-  var ts=0,tb=0;for(var j=0;j<hist.length;j++){if(hist[j]==='w'){ts++;if(ts>tb)tb=ts;}else ts=0;}best=tb;update();
-}
-function doSet(){var v=parseInt(document.getElementById('manualInput').value,10);if(isNaN(v)||v<0)return;streak=v;if(v>best)best=v;document.getElementById('manualInput').value='';update();}
-function doReset(){if(!confirm('Reset all stats?'))return;streak=0;best=0;wins=0;losses=0;hist=[];update();}
-document.getElementById('btnWin').addEventListener('click',doWin);
-document.getElementById('btnLose').addEventListener('click',doLose);
-document.getElementById('btnUndo').addEventListener('click',doUndo);
-document.getElementById('btnReset').addEventListener('click',doReset);
-document.getElementById('btnSet').addEventListener('click',doSet);
-document.getElementById('manualInput').addEventListener('keydown',function(e){if(e.key==='Enter')doSet();});
-document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT')return;if(e.key==='w'||e.key==='W')doWin();if(e.key==='l'||e.key==='L')doLose();if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}});
-try{var s=localStorage.getItem('ckaleb_streak');if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}}catch(e){}
-update();
+  var streak=0,best=0,wins=0,losses=0,hist=[];
+
+  function save(){
+    try{
+      localStorage.setItem('ckaleb_streak', JSON.stringify({streak:streak,best:best,wins:wins,losses:losses}));
+    }catch(e){}
+  }
+
+  function update(){
+    document.getElementById('numDisplay').textContent=streak;
+    document.getElementById('bestDisplay').textContent=best;
+    document.getElementById('winsDisplay').textContent=wins;
+    document.getElementById('lossDisplay').textContent=losses;
+    var t=wins+losses;
+    document.getElementById('rateDisplay').textContent=t>0?Math.round(wins/t*100)+'%':'--';
+    document.getElementById('numDisplay').style.color=streak>0?'#4ade80':'#8a90a8';
+    var wr=t>0?Math.round(wins/t*100)+'%':'N/A';
+    var cmds=[
+      ['!streak','C.Kaleb is on a '+streak+'-game win streak!'],
+      ['!best','Best streak tonight: '+best+' wins in a row'],
+      ['!score',wins+'W / '+losses+'L -- Win rate '+wr],
+      ['!arena','Post arena code in chat to join!'],
+      ['!char','C.Kaleb mains Pac-Man | MI Top 10 Smash Ultimate']
+    ];
+    document.getElementById('cmdList').innerHTML=cmds.map(function(c){
+      return '<div class="cmd"><span class="cmd-t">'+c[0]+'</span><span class="cmd-r">"'+c[1]+'"</span></div>';
+    }).join('');
+    save();
+  }
+
+  function doWin(){hist.push('w');streak++;wins++;if(streak>best)best=streak;update();}
+  function doLose(){hist.push('l');streak=0;losses++;update();}
+  function doUndo(){
+    if(!hist.length)return;
+    var l=hist.pop();
+    if(l==='w'){wins=Math.max(0,wins-1);streak=Math.max(0,streak-1);}
+    else{losses=Math.max(0,losses-1);streak=0;for(var i=hist.length-1;i>=0;i--){if(hist[i]==='w')streak++;else break;}}
+    var ts=0,tb=0;for(var j=0;j<hist.length;j++){if(hist[j]==='w'){ts++;if(ts>tb)tb=ts;}else ts=0;}best=tb;update();
+  }
+  function doSet(){var v=parseInt(document.getElementById('manualInput').value,10);if(isNaN(v)||v<0)return;streak=v;if(v>best)best=v;document.getElementById('manualInput').value='';update();}
+  function doReset(){if(!confirm('Reset all stats?'))return;streak=0;best=0;wins=0;losses=0;hist=[];update();}
+
+  document.getElementById('btnWin').addEventListener('click',doWin);
+  document.getElementById('btnLose').addEventListener('click',doLose);
+  document.getElementById('btnUndo').addEventListener('click',doUndo);
+  document.getElementById('btnReset').addEventListener('click',doReset);
+  document.getElementById('btnSet').addEventListener('click',doSet);
+  document.getElementById('manualInput').addEventListener('keydown',function(e){if(e.key==='Enter')doSet();});
+  document.addEventListener('keydown',function(e){
+    if(e.target.tagName==='INPUT')return;
+    if(e.key==='w'||e.key==='W')doWin();
+    if(e.key==='l'||e.key==='L')doLose();
+    if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}
+  });
+
+  try{
+    var s=localStorage.getItem('ckaleb_streak');
+    if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}
+  }catch(e){}
+  update();
 })();
 </script>
 </body>
