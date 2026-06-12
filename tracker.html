@@ -82,7 +82,7 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 <script>
 (function(){
   var BIN_ID = '6a2bb96fda38895dfeb35511';
-  var API_KEY = '$2a$10$TWKGFi8gk9KQmP5he6cfNuxZR1hlQghxikWHUBKAkKw1RIMY5YR9.';
+  var API_KEY = '$2a$10$6B4aVytg0g.hnXs.Rv31je5YIELXyZLfs97TxI8HN55aTg1RBL9rm';
   var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
   var streak=0,best=0,wins=0,losses=0,hist=[];
@@ -159,7 +159,6 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
     if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}
   });
 
-  // Load from jsonbin on startup
   setStatus('loading...');
   fetch(BIN_URL, { headers: { 'X-Master-Key': API_KEY } })
     .then(function(r){ return r.json(); })
@@ -170,7 +169,6 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
       update();
     })
     .catch(function(){
-      // fallback to localStorage
       try{var s=localStorage.getItem('ckaleb_streak');if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}}catch(e){}
       setStatus('\u26a0 offline mode', 'err');
       update();
