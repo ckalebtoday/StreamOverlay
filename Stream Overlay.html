@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Streak Overlay</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; }
+.overlay { display: inline-flex; flex-direction: column; gap: 2px; background: rgba(0,0,0,0.58); border-left: 4px solid #4ade80; border-radius: 6px; padding: 10px 16px 10px 14px; margin: 10px; min-width: 150px; }
+.lbl { font-family: sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+.num { font-family: monospace; font-size: 48px; font-weight: 700; color: #4ade80; line-height: 1; }
+.sub { font-family: sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="overlay">
+  <div class="lbl">Win Streak</div>
+  <div class="num" id="numEl">0</div>
+  <div class="sub">Best: <span id="bestEl">0</span> | <span id="winsEl">0</span>W <span id="lossEl">0</span>L</div>
+</div>
+<script>
+function check(){try{var r=localStorage.getItem('ckaleb_streak');if(r){var d=JSON.parse(r);document.getElementById('numEl').textContent=d.streak||0;document.getElementById('bestEl').textContent=d.best||0;document.getElementById('winsEl').textContent=d.wins||0;document.getElementById('lossEl').textContent=d.losses||0;document.getElementById('numEl').style.color=(d.streak||0)>0?'#4ade80':'rgba(255,255,255,0.4)';}}catch(e){}}
+setInterval(check,300);
+window.addEventListener('storage',function(e){if(e.key==='ckaleb_streak')check();});
+check();
+</script>
+</body>
+</html>
