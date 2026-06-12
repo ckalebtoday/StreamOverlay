@@ -35,15 +35,18 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 .cmd-r { font-size: 11px; color: #8a90a8; text-align: right; line-height: 1.5; }
 .tip { background: rgba(124,109,248,0.07); border: 1px solid rgba(124,109,248,0.18); border-radius: 9px; padding: 12px; font-size: 11px; color: #8a90a8; line-height: 1.7; }
 .tip b { color: #a89df8; }
+.sync-status { font-size: 10px; text-align: center; color: #555b70; }
+.sync-status.ok { color: #4ade80; }
+.sync-status.err { color: #f87171; }
 </style>
 </head>
 <body>
 <div class="app">
   <h2>C.Kaleb Win Streak Tracker</h2>
   <div class="tip">
-    <b>OBS Overlay:</b> Add Browser Source → URL →
+    <b>OBS / TikTok Live Studio:</b> Add Browser Source → URL →
     <b>https://ckalebtoday.github.io/StreamOverlay/</b> — Width 340, Height 110.<br>
-    <b>Tracker:</b> Keep this tab open while streaming — <b>https://ckalebtoday.github.io/StreamOverlay/tracker.html</b><br>
+    <b>Tracker:</b> Keep this tab open while streaming.<br>
     <b>Keys:</b> W = Win &nbsp;|&nbsp; L = Lose &nbsp;|&nbsp; Ctrl+Z = Undo
   </div>
   <div class="card">
@@ -60,6 +63,7 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
     <div class="stat"><div class="sv l" id="lossDisplay">0</div><div class="sl">Losses</div></div>
     <div class="stat"><div class="sv g" id="rateDisplay">--</div><div class="sl">Win Rate</div></div>
   </div>
+  <div id="syncStatus" class="sync-status">syncing...</div>
   <div class="section-lbl">Set streak manually</div>
   <div class="row">
     <input type="number" id="manualInput" min="0" placeholder="e.g. 11">
@@ -77,12 +81,35 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 </div>
 <script>
 (function(){
+  var BIN_ID = '6a2bb96fda38895dfeb35511';
+  var API_KEY = '$2a$10$TWKGFi8gk9KQmP5he6cfNuxZR1hlQghxikWHUBKAkKw1RIMY5YR9.';
+  var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
   var streak=0,best=0,wins=0,losses=0,hist=[];
+  var saveTimer=null;
+
+  function setStatus(msg, cls){
+    var el=document.getElementById('syncStatus');
+    el.textContent=msg; el.className='sync-status'+(cls?' '+cls:'');
+  }
+
+  function pushToCloud(data){
+    setStatus('saving...');
+    fetch(BIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(data)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(){ setStatus('\u2713 synced', 'ok'); })
+    .catch(function(){ setStatus('\u26a0 sync failed — check connection', 'err'); });
+  }
 
   function save(){
-    try{
-      localStorage.setItem('ckaleb_streak', JSON.stringify({streak:streak,best:best,wins:wins,losses:losses}));
-    }catch(e){}
+    var data={streak:streak,best:best,wins:wins,losses:losses};
+    try{ localStorage.setItem('ckaleb_streak', JSON.stringify(data)); }catch(e){}
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){ pushToCloud(data); }, 300);
   }
 
   function update(){
@@ -132,11 +159,22 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
     if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}
   });
 
-  try{
-    var s=localStorage.getItem('ckaleb_streak');
-    if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}
-  }catch(e){}
-  update();
+  // Load from jsonbin on startup
+  setStatus('loading...');
+  fetch(BIN_URL, { headers: { 'X-Master-Key': API_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      var p=j.record||{};
+      streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;
+      setStatus('\u2713 loaded', 'ok');
+      update();
+    })
+    .catch(function(){
+      // fallback to localStorage
+      try{var s=localStorage.getItem('ckaleb_streak');if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}}catch(e){}
+      setStatus('\u26a0 offline mode', 'err');
+      update();
+    });
 })();
 </script>
 </body>

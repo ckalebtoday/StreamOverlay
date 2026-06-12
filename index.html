@@ -19,6 +19,10 @@ html, body { background: transparent; }
   <div class="sub">Best: <span id="bestEl">0</span> | <span id="winsEl">0</span>W <span id="lossEl">0</span>L</div>
 </div>
 <script>
+var BIN_ID = '6a2bb96fda38895dfeb35511';
+var API_KEY = '$2a$10$TWKGFi8gk9KQmP5he6cfNuxZR1hlQghxikWHUBKAkKw1RIMY5YR9.';
+var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
 function render(d){
   document.getElementById('numEl').textContent = d.streak||0;
   document.getElementById('bestEl').textContent = d.best||0;
@@ -26,15 +30,19 @@ function render(d){
   document.getElementById('lossEl').textContent = d.losses||0;
   document.getElementById('numEl').style.color = (d.streak||0)>0 ? '#4ade80' : 'rgba(255,255,255,0.4)';
 }
-function check(){
-  try {
-    var r = localStorage.getItem('ckaleb_streak');
-    if(r) render(JSON.parse(r));
-  } catch(e){}
+
+function fetchData(){
+  fetch(BIN_URL + '?t=' + Date.now(), {
+    headers: { 'X-Master-Key': API_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(j){ if(j.record) render(j.record); })
+  .catch(function(){});
 }
-setInterval(check, 1000);
-window.addEventListener('storage', function(e){ if(e.key==='ckaleb_streak') check(); });
-check();
+
+// Poll every 2 seconds - works in any browser including TikTok Live Studio
+setInterval(fetchData, 2000);
+fetchData();
 </script>
 </body>
 </html>
