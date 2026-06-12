@@ -38,6 +38,9 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 .sync-status { font-size: 10px; text-align: center; color: #555b70; }
 .sync-status.ok { color: #4ade80; }
 .sync-status.err { color: #f87171; }
+.key-card { background: #1a0a0a; border: 1px solid rgba(248,113,113,0.3); border-radius: 10px; padding: 14px; }
+.key-card h3 { font-size: 12px; font-weight: 700; color: #f87171; margin-bottom: 8px; }
+.key-input { width: 100%; background: #1d2130; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 12px; font-size: 12px; font-family: monospace; color: #e8eaf2; outline: none; }
 </style>
 </head>
 <body>
@@ -46,8 +49,12 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
   <div class="tip">
     <b>OBS / TikTok Live Studio:</b> Add Browser Source → URL →
     <b>https://ckalebtoday.github.io/StreamOverlay/</b> — Width 340, Height 110.<br>
-    <b>Tracker:</b> Keep this tab open while streaming.<br>
+    <b>Tracker:</b> Open this file locally from your desktop — do not use the GitHub URL.<br>
     <b>Keys:</b> W = Win &nbsp;|&nbsp; L = Lose &nbsp;|&nbsp; Ctrl+Z = Undo
+  </div>
+  <div class="key-card">
+    <h3>⚠️ Enter your jsonbin Master Key to enable sync</h3>
+    <input class="key-input" type="password" id="apiKeyInput" placeholder="Paste your X-Master-Key here...">
   </div>
   <div class="card">
     <div class="lbl">Current Win Streak</div>
@@ -63,7 +70,7 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
     <div class="stat"><div class="sv l" id="lossDisplay">0</div><div class="sl">Losses</div></div>
     <div class="stat"><div class="sv g" id="rateDisplay">--</div><div class="sl">Win Rate</div></div>
   </div>
-  <div id="syncStatus" class="sync-status">syncing...</div>
+  <div id="syncStatus" class="sync-status">enter key above to sync</div>
   <div class="section-lbl">Set streak manually</div>
   <div class="row">
     <input type="number" id="manualInput" min="0" placeholder="e.g. 11">
@@ -82,11 +89,14 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
 <script>
 (function(){
   var BIN_ID = '6a2bb96fda38895dfeb35511';
-  var API_KEY = '$2a$10$sSDtl.QEk0QeBoI9Yjv8RuELzeL5crUHi1USdBStwtnY/EkLrVLC2';
   var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
   var streak=0,best=0,wins=0,losses=0,hist=[];
   var saveTimer=null;
+
+  function getKey(){
+    return document.getElementById('apiKeyInput').value.trim();
+  }
 
   function setStatus(msg, cls){
     var el=document.getElementById('syncStatus');
@@ -94,15 +104,20 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
   }
 
   function pushToCloud(data){
+    var key=getKey();
+    if(!key){ setStatus('enter key above to sync'); return; }
     setStatus('saving...');
     fetch(BIN_URL, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': key },
       body: JSON.stringify(data)
     })
     .then(function(r){ return r.json(); })
-    .then(function(){ setStatus('\u2713 synced', 'ok'); })
-    .catch(function(){ setStatus('\u26a0 sync failed — check connection', 'err'); });
+    .then(function(j){
+      if(j.message && j.message.toLowerCase().includes('invalid')){ setStatus('\u26a0 invalid key', 'err'); }
+      else { setStatus('\u2713 synced', 'ok'); }
+    })
+    .catch(function(){ setStatus('\u26a0 sync failed', 'err'); });
   }
 
   function save(){
@@ -159,20 +174,11 @@ input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,25
     if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();doUndo();}
   });
 
-  setStatus('loading...');
-  fetch(BIN_URL, { headers: { 'X-Master-Key': API_KEY } })
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      var p=j.record||{};
-      streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;
-      setStatus('\u2713 loaded', 'ok');
-      update();
-    })
-    .catch(function(){
-      try{var s=localStorage.getItem('ckaleb_streak');if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}}catch(e){}
-      setStatus('\u26a0 offline mode', 'err');
-      update();
-    });
+  try{
+    var s=localStorage.getItem('ckaleb_streak');
+    if(s){var p=JSON.parse(s);streak=p.streak||0;best=p.best||0;wins=p.wins||0;losses=p.losses||0;}
+  }catch(e){}
+  update();
 })();
 </script>
 </body>
