@@ -1,28 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Streak Overlay</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: transparent; }
-.overlay { display: inline-flex; flex-direction: column; gap: 2px; background: rgba(0,0,0,0.58); border-left: 4px solid #4ade80; border-radius: 6px; padding: 10px 16px 10px 14px; margin: 10px; min-width: 150px; }
-.lbl { font-family: sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
-.num { font-family: monospace; font-size: 48px; font-weight: 700; color: #4ade80; line-height: 1; }
-.sub { font-family: sans-serif; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); margin-top: 2px; }
-</style>
+    <meta charset="UTF-8">
+    <title>C.Kaleb Win Streak Overlay & Tracker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        /* Dynamic background controlled by the toggle mode button */
+        html, body { 
+            background: #0d0f14; 
+            color: #e8eaf2; 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px 16px; 
+            min-height: 100vh; 
+        }
+
+        /* --- MODE TOGGLE CONTROL --- */
+        #modeToggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #2a2a2a;
+            color: #4ade80;
+            border: 1px solid #4ade80;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 9999;
+        }
+
+        /* --- INTERFACE CONTAINERS --- */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* OBS Overlay specific alignment rules */
+        .overlay-zone {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* --- OBS OVERLAY STYLING --- */
+        .overlay {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 2px;
+            background: rgba(0,0,0,0.58);
+            border-left: 4px solid #4ade80;
+            border-radius: 6px;
+            padding: 10px 16px 10px 14px;
+            min-width: 150px;
+            width: max-content;
+        }
+        .overlay .lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 0; }
+        .overlay .sub { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        /* --- TRACKER CONTROL PANEL STYLING --- */
+        .app { display: flex; flex-direction: column; gap: 14px; }
+        h2 { font-size: 18px; font-weight: 700; text-align: center; color: #a89df8; }
+        .card { background: #13161e; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 28px 20px; text-align: center; }
+        .lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8a90a8; margin-bottom: 8px; }
+        #numDisplay { font-size: 100px; font-weight: 700; font-family: monospace; line-height: 1; color: #8a90a8; margin-bottom: 8px; }
+        .best-line { font-size: 13px; color: #8a90a8; margin-bottom: 22px; }
+        .btn-row { display: flex; gap: 12px; }
+        .btn-win { flex: 1; background: #4ade80; color: #071a0a; font-size: 18px; font-weight: 700; border: none; border-radius: 10px; padding: 16px; cursor: pointer; }
+        .btn-win:active { opacity: 0.85; transform: scale(0.97); }
+        .btn-lose { flex: 1; background: #f87171; color: #1a0303; font-size: 18px; font-weight: 700; border: none; border-radius: 10px; padding: 16px; cursor: pointer; }
+        .btn-lose:active { opacity: 0.85; transform: scale(0.97); }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .stat { background: #13161e; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 8px; text-align: center; }
+        .sv { font-size: 22px; font-weight: 700; font-family: monospace; margin-bottom: 4px; }
+        .sv.w { color: #4ade80; }
+        .sv.l { color: #f87171; }
+        .sv.g { color: #fbbf24; }
+        .sl { font-size: 10px; color: #8a90a8; text-transform: uppercase; letter-spacing: 0.08em; }
+        .row { display: flex; gap: 10px; }
+        input[type=number] { flex: 1; background: #1d2130; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 11px 13px; font-size: 15px; font-family: monospace; color: #e8eaf2; outline: none; }
+        .btn-set { background: #7c6df8; color: #fff; font-size: 14px; font-weight: 700; border: none; border-radius: 8px; padding: 11px 16px; cursor: pointer; white-space: nowrap; }
+        .btn-util { flex: 1; background: #1d2130; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 11px; font-size: 13px; font-weight: 600; color: #8a90a8; cursor: pointer; }
+        .section-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #555b70; }
+        .cmd-card { background: #13161e; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; }
+        .cmd-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #a89df8; }
+        .cmd { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; background: #1d2130; border-radius: 7px; margin-bottom: 7px; }
+        .cmd:last-child { margin-bottom: 0; }
+        .cmd-t { font-family: monospace; font-size: 12px; font-weight: 700; color: #7c6df8; flex-shrink: 0; }
+        .cmd-r { font-size: 11px; color: #8a90a8; text-align: right; line-height: 1.5; }
+        .tip { background: rgba(124,109,248,0.07); border: 1px solid rgba(124,109,248,0.18); border-radius: 9px; padding: 12px; font-size: 11px; color: #8a90a8; line-height: 1.7; }
+        .tip b { color: #a89df8; }
+
+        /* --- OBS EXCLUSIONS --- */
+        body.obs-mode { background: transparent !important; padding: 10px !important; display: block !important; min-height: auto !important; }
+        body.obs-mode .app, body.obs-mode #modeToggle { display: none !important; }
+    </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="lbl">Win Streak</div>
-  <div class="num" id="numEl">0</div>
-  <div class="sub">Best: <span id="bestEl">0</span> | <span id="winsEl">0</span>W <span id="lossEl">0</span>L</div>
-</div>
-<script>
-function check(){try{var r=localStorage.getItem('ckaleb_streak');if(r){var d=JSON.parse(r);document.getElementById('numEl').textContent=d.streak||0;document.getElementById('bestEl').textContent=d.best||0;document.getElementById('winsEl').textContent=d.wins||0;document.getElementById('lossEl').textContent=d.losses||0;document.getElementById('numEl').style.color=(d.streak||0)>0?'#4ade80':'rgba(255,255,255,0.4)';}}catch(e){}}
-setInterval(check,300);
-window.addEventListener('storage',function(e){if(e.key==='ckaleb_streak')check();});
-check();
-</script>
-</body>
-</html>
+
+    <!-- CLICK THIS ONCE IN OBS TO CHOOSE TRANSPARENCY MODE -->
+    <button id="modeToggle" onclick="toggleOBSMode()">👁️ Stream Overlay Mode</button>
+
+    <div class="workspace">
+        
+        <!-- THE LIVE STREAM OVERLAY COMPONENT -->
+        <div class="overlay-zone">
+            <div class="overlay">
+                <div class="lbl">Win Streak</div>
+                <div class="num" id="numEl" style="font-family: monospace; font-size: 48px; font-weight: 700; color: #4ade80; line-height: 1;">0</div>
+                <div class="sub">Best: <span id="bestEl">0</span> | <span id="winsEl">0</span>W <span id="lossEl">0</span>L</div>
+            </div>
+        </div>
+
+        <!-- YOUR PAC-MAN CONTROL WORKSPACE -->
+        <div class="app">
+            <h2>C.Kaleb Win Streak Tracker</h2>
+            <div class="tip"><b>OBS Setup:</b> Click the top-right button to hide this panel. Copy your URL into OBS. <b>Keys:</b> W = Win, L = Lose, Ctrl+Z = Undo</div>
+            
+            <div class="card">
+                <div class="lbl">Current Win Streak</div>
+                <div id="numDisplay">0</div>
+                <div class="best-line">Best tonight: <b id="bestDisplay" style="color:#fbbf24">0</b></div>
+                <div class="btn-row">
+                    <button class="btn-win" id="btnWin">WIN</button>
+                    <button class="btn-lose" id="btnLose">LOSE</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat"><div class="sv w" id="winsDisplay">0</div><div class="sl">Wins</div></div>
+                <div class="stat"><div class="sv l" id="lossDisplay">0</div><div class="sl">Losses</div></div>
+                <div class="stat"><div class="sv g" id="rateDisplay">--</div><div class="sl">Win Rate</div></div>
+            </div>
+
+            <div class="section-lbl">Set streak manually</div>
+            <div class="row">
+                <input type="number" id="manualInput" min="0" placeholder="e.g. 11">
+                <button class="btn-set" id="btnSet">Set Streak</button>
+            </div>
+
+            <div class="row">
+                <button class="btn-util" id="btnUndo">Undo Last</button>
+                <button class="btn-util" id="btnReset" style="color:#f87171">Reset All</button>
+            </div>
+
+            <div class="section-lbl">TikFinity commands</div>
+            <div class="cmd-card">
+                <h3>Paste each response into TikFinity Chatbot</h3>
+                <div id="cmdList"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        (function(){
+            var streak=0,best=0,wins=0,losses=0,hist=[];
+
+            function save(){
+                try{
+                    localStorage.setItem('ckaleb_streak',JSON.stringify({streak:streak,best:best,wins:wins,losses:losses}));
+                }catch(e){}
+            }
+
+            function update(){
+                // Update tracker values
+                document.getElementById('numDisplay').textContent=streak;
+                document.getElementById('bestDisplay').textContent=best;
+                document.getElementById('winsDisplay').textContent=wins;
+                document.getElementById('lossDisplay').textContent=losses;
+                
+                // Update live overlay element values synchronously
+                document.getElementById('numEl').textContent=streak;
+                document.getElementById('bestEl').textContent=best;
+                document.getElementById('winsEl').textContent=wins;
+                document.getElementById('lossEl').textContent=losses;
+
+                var t=wins+losses;
+                document.getElementById('rateDisplay').textContent=t>0?Math.round(wins/t*100)+'%':'--';
+                
+                // Color formatting
+                var activeColor = streak>0?'#4ade80':'#8a90a8';
+                var lowColor = streak>0?'#4ade80':'rgba(255,255,255,0.4)';
+                document.getElementById('numDisplay').style.color=activeColor;
+                document.getElementById('numEl').style.color=lowColor;
+
+                var wr=t>0?Math.round(wins/t*100)+'%':'N/A';
+                var cmds=[
+                    ['!streak','C.Kaleb is on a '+streak+'-game win streak!'],
