@@ -6,7 +6,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        /* Dynamic background controlled by the toggle mode button */
         html, body { 
             background: #0d0f14; 
             color: #e8eaf2; 
@@ -43,7 +42,6 @@
             max-width: 420px;
         }
 
-        /* OBS Overlay specific alignment rules */
         .overlay-zone {
             display: flex;
             justify-content: center;
@@ -105,21 +103,20 @@
 </head>
 <body>
 
-    <!-- CLICK THIS ONCE IN OBS TO CHOOSE TRANSPARENCY MODE -->
     <button id="modeToggle" onclick="toggleOBSMode()">👁️ Stream Overlay Mode</button>
 
     <div class="workspace">
         
-        <!-- THE LIVE STREAM OVERLAY COMPONENT -->
+        <!-- LIVE OVERLAY COMPONENT -->
         <div class="overlay-zone">
             <div class="overlay">
                 <div class="lbl">Win Streak</div>
-                <div class="num" id="numEl" style="font-family: monospace; font-size: 48px; font-weight: 700; color: #4ade80; line-height: 1;">0</div>
+                <div class="num" id="numEl">0</div>
                 <div class="sub">Best: <span id="bestEl">0</span> | <span id="winsEl">0</span>W <span id="lossEl">0</span>L</div>
             </div>
         </div>
 
-        <!-- YOUR PAC-MAN CONTROL WORKSPACE -->
+        <!-- CONTROL PANEL -->
         <div class="app">
             <h2>C.Kaleb Win Streak Tracker</h2>
             <div class="tip"><b>OBS Setup:</b> Click the top-right button to hide this panel. Copy your URL into OBS. <b>Keys:</b> W = Win, L = Lose, Ctrl+Z = Undo</div>
@@ -170,14 +167,12 @@
                 }catch(e){}
             }
 
-            function update(){
-                // Update tracker values
+            function update() {
                 document.getElementById('numDisplay').textContent=streak;
                 document.getElementById('bestDisplay').textContent=best;
                 document.getElementById('winsDisplay').textContent=wins;
                 document.getElementById('lossDisplay').textContent=losses;
                 
-                // Update live overlay element values synchronously
                 document.getElementById('numEl').textContent=streak;
                 document.getElementById('bestEl').textContent=best;
                 document.getElementById('winsEl').textContent=wins;
@@ -186,7 +181,6 @@
                 var t=wins+losses;
                 document.getElementById('rateDisplay').textContent=t>0?Math.round(wins/t*100)+'%':'--';
                 
-                // Color formatting
                 var activeColor = streak>0?'#4ade80':'#8a90a8';
                 var lowColor = streak>0?'#4ade80':'rgba(255,255,255,0.4)';
                 document.getElementById('numDisplay').style.color=activeColor;
@@ -195,3 +189,11 @@
                 var wr=t>0?Math.round(wins/t*100)+'%':'N/A';
                 var cmds=[
                     ['!streak','C.Kaleb is on a '+streak+'-game win streak!'],
+                    ['!best','Best streak tonight: '+best+' wins in a row'],
+                    ['!score',wins+'W / '+losses+'L -- Win rate '+wr],
+                    ['!arena','Post arena code in chat to join!'],
+                    ['!char','C.Kaleb mains Pac-Man | MI Top 10 Smash Ultimate']
+                ];
+                
+                // FIXED ARRAY MAPPING LOOP HERE
+                document.getElementById('cmdList').innerHTML=cmds.map(function(c){
